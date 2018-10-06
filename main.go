@@ -41,7 +41,9 @@ func main() {
 
 	rootPath := os.Args[1]
 	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() && err == nil {
+		if err != nil {
+			log.Fatalf("Error accessing %s\n", path)
+		} else if !info.IsDir() {
 			jobs <- path
 		}
 		return nil
