@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -22,7 +23,7 @@ import (
 const bufSize = 1 << 21
 
 var workers int
-
+var syncer = int64(1 << 62)
 var printLock sync.Mutex
 
 func main() {
@@ -44,10 +45,18 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error accessing %s\n", path)
 		} else if !info.IsDir() {
+			atomic.AddInt64(&syncer, 1)
 			jobs <- path
 		}
 		return nil
 	})
+
+	// Mark files walking as done
+	atomic.AddInt64(&syncer, -(1 << 62))
+
+	for atomic.LoadInt64(&syncer) != 0 {
+		time.Sleep(time.Millisecond)
+	}
 
 	close(jobs)
 
@@ -68,6 +77,7 @@ func worker(jobs <-chan string) {
 	buf := make([]byte, bufSize)
 	for job := range jobs {
 		hashes(job, buf)
+		atomic.AddInt64(&syncer, -1)
 	}
 }
 
