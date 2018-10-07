@@ -21,3 +21,4 @@ redis-cli < hashes.redis
   ```
 * All hashes are hex-encoded.
 * `-threads=x` (default: number of cores)
+* `-prefix=/path/to/dir` (pretend files are in this dir)

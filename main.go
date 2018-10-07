@@ -22,13 +22,22 @@ import (
 // 2 MiB
 const bufSize = 1 << 21
 
+var rootPath string
 var workers int
 var syncer = int64(1 << 62)
 var printLock sync.Mutex
+var prefix string
 
 func main() {
+	flag.IntVar(&workers, "threads", runtime.NumCPU(), "Number of files to process at simultaneously")
+	flag.StringVar(&prefix, "prefix", "", "Path prefix")
+
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: hashr <directory>")
+	} else if strings.Contains(os.Args[1], "help") {
+		os.Args[0] = os.Args[0] + " <directory>"
+		flag.Usage()
+		os.Exit(1)
 	}
 
 	parseFlags(os.Args[2:])
@@ -40,7 +49,7 @@ func main() {
 		go worker(jobs)
 	}
 
-	rootPath := os.Args[1]
+	rootPath = os.Args[1]
 	err = filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Fatalf("Error accessing %s\n", path)
@@ -67,7 +76,6 @@ func main() {
 
 func parseFlags(cmd []string) {
 	realArgs := os.Args
-	flag.IntVar(&workers, "threads", runtime.NumCPU(), "Number of files to process at simultaneously")
 	os.Args = append([]string{"hashr"}, cmd...)
 	flag.Parse()
 	os.Args = realArgs
@@ -128,9 +136,11 @@ func hashes(path string, buf []byte) {
 	sumSha512 := hex.EncodeToString(dSha512.Sum(nil))
 
 	// Escape quotes in filename
-	key := strings.Replace(path, `"`, `\"`, -1)
+	keyPath, _ := filepath.Rel(rootPath, path)
+	keyPath = filepath.Join(prefix, keyPath)
+	key := strings.Replace(keyPath, `"`, `\"`, -1)
 
-	log.Printf("Done %s in %s.", path, time.Since(start))
+	log.Printf("Done %s in %s.", keyPath, time.Since(start))
 
 	// Print result
 	printLock.Lock()
