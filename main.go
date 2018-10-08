@@ -107,12 +107,13 @@ func hashes(path string, buf []byte) {
 	dSha256 := sha256.New()
 	dSha512 := sha512.New()
 
-	for {
+	eof := false
+	for !eof {
 		// Read chunk
 		var n int
 		n, err = file.Read(buf)
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			break
+			eof = true
 		} else if err != nil {
 			log.Printf("Error processing %s: %e\n", path, err)
 			return
