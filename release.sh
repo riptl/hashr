@@ -12,3 +12,7 @@ GOOS=linux GOARCH=arm64 go build -o bin/hashr-$1-linux-arm64
 GOOS=windows GOARCH=386 go build -o bin/hashr-$1-win32.exe
 GOOS=windows GOARCH=amd64 go build -o bin/hashr-$1-win64.exe
 GOOS=darwin GOARCH=amd64 go build -o bin/hashr-$1-macOS
+GOOS=dragonfly GOARCH=amd64 go build -o bin/hashr-$1-dragonfly-amd64
+GOOS=openbsd GOARCH=amd64 go build -o bin/hashr-$1-openbsd-amd64
+GOOS=netbsd GOARCH=amd64 go build -o bin/hashr-$1-netbsd-amd64
+GOOS=freebsd GOARCH=amd64 go build -o bin/hashr-$1-freebsd-amd64
