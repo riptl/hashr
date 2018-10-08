@@ -28,6 +28,11 @@ var syncer = int64(1 << 62)
 var printLock sync.Mutex
 var prefix string
 
+type Job struct{
+	path string
+	info os.FileInfo
+}
+
 func main() {
 	flag.IntVar(&workers, "threads", runtime.NumCPU(), "Number of files to process at simultaneously")
 	flag.StringVar(&prefix, "prefix", "", "Path prefix")
@@ -43,7 +48,7 @@ func main() {
 	parseFlags(os.Args[2:])
 
 	var err error
-	jobs := make(chan string)
+	jobs := make(chan Job)
 
 	for i := 0; i < workers; i++ {
 		go worker(jobs)
@@ -55,7 +60,7 @@ func main() {
 			log.Fatalf("Error accessing %s\n", path)
 		} else if !info.IsDir() {
 			atomic.AddInt64(&syncer, 1)
-			jobs <- path
+			jobs <- Job{ path, info }
 		}
 		return nil
 	})
@@ -81,7 +86,7 @@ func parseFlags(cmd []string) {
 	os.Args = realArgs
 }
 
-func worker(jobs <-chan string) {
+func worker(jobs <-chan Job) {
 	buf := make([]byte, bufSize)
 	for job := range jobs {
 		hashes(job, buf)
@@ -89,7 +94,11 @@ func worker(jobs <-chan string) {
 	}
 }
 
-func hashes(path string, buf []byte) {
+func hashes(job Job, buf []byte) {
+	path := job.path
+	size := job.info.Size()
+	ext := strings.TrimLeft(filepath.Ext(path), ".")
+
 	fullBuf := buf
 	start := time.Now()
 
@@ -145,8 +154,10 @@ func hashes(path string, buf []byte) {
 
 	// Print result
 	printLock.Lock()
-	fmt.Printf(`SET "%s" "%s|%s|%s|%s"`+"\n",
+	fmt.Printf(`SET "%s" "%d|%s|%s|%s|%s|%s"`+"\n",
 		key,
+		size,
+		ext,
 		sumMd5,
 		sumSha1,
 		sumSha256,
