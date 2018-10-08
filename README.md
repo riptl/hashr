@@ -17,7 +17,7 @@ redis-cli < hashes.redis
 
 * The output (on stdout) looks like this:
   ```
-  SET "<filename>" "<md5>|<sha1>|<sha256>|<sha512>"
+  SET "<filename>" "<file size>|<extension>|<md5>|<sha1>|<sha256>|<sha512>"
   ```
 * All hashes are hex-encoded.
 * `-threads=x` (default: number of cores)
