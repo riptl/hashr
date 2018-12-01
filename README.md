@@ -10,7 +10,7 @@ and outputs a list of hashes suitable for Redis.
 
 # Write to file and import
 ./hashr /directory > hashes.redis
-redis-cli < hashes.redis
+redis-cli --pipe < hashes.redis
 ```
 
 **Info:**
@@ -22,3 +22,4 @@ redis-cli < hashes.redis
 * All hashes are hex-encoded.
 * `-threads=x` (default: number of cores)
 * `-prefix=/path/to/dir` (pretend files are in this dir)
+* `-key=HASHDB` (Redis key of the [HASHES](https://redis.io/commands#hash) object)
