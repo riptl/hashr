@@ -27,6 +27,7 @@ var workers int
 var syncer = int64(1 << 62)
 var printLock sync.Mutex
 var prefix string
+var redisKey string
 
 type Job struct{
 	path string
@@ -36,6 +37,7 @@ type Job struct{
 func main() {
 	flag.IntVar(&workers, "threads", runtime.NumCPU(), "Number of files to process at simultaneously")
 	flag.StringVar(&prefix, "prefix", "", "Path prefix")
+	flag.StringVar(&redisKey, "key", "HASHDB", "Key of the Redis HASHES object")
 
 	if len(os.Args) < 2 {
 		log.Fatal("Usage: hashr <directory>")
@@ -148,14 +150,28 @@ func hashes(job Job, buf []byte) {
 	// Escape quotes in filename
 	keyPath, _ := filepath.Rel(rootPath, path)
 	keyPath = filepath.Join(prefix, keyPath)
-	key := strings.Replace(keyPath, `"`, `\"`, -1)
 
 	log.Printf("Done %s in %s.", keyPath, time.Since(start))
 
 	// Print result
 	printLock.Lock()
-	fmt.Printf(`SET "%s" "%d|%s|%s|%s|%s|%s"`+"\n",
-		key,
+
+	// Command of 3 values
+	fmt.Print("*4\r\n")
+	// HSET, length 4
+	fmt.Print("$4\r\n")
+	fmt.Print("HSET\r\n")
+
+	// Redis Key
+	fmt.Printf("$%d\r\n", len(redisKey))
+	fmt.Printf("%s\r\n", redisKey)
+
+	// Key
+	fmt.Printf("$%d\r\n", len(keyPath))
+	fmt.Printf("%s\r\n", keyPath)
+
+	// Value
+	value := fmt.Sprintf(`%d|%s|%s|%s|%s|%s`,
 		size,
 		ext,
 		sumMd5,
@@ -163,5 +179,8 @@ func hashes(job Job, buf []byte) {
 		sumSha256,
 		sumSha512,
 	)
+	fmt.Printf("$%d\r\n", len(value))
+	fmt.Printf("%s\r\n", value)
+
 	printLock.Unlock()
 }
