@@ -100,6 +100,7 @@ func hashes(job Job, buf []byte) {
 	path := job.path
 	size := job.info.Size()
 	ext := strings.TrimLeft(filepath.Ext(path), ".")
+	ext = strings.Replace(ext, "|", "", -1)
 
 	fullBuf := buf
 	start := time.Now()
